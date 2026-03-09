@@ -1,0 +1,97 @@
+package ru.otus.java.basic.chat.server;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+public class ClientHandler implements Runnable {
+    private Server server;
+    private Socket socket;
+    private DataInputStream in;
+    private DataOutputStream out;
+    private boolean active = true;
+    private String username;
+
+    public ClientHandler(Server server, Socket socket) throws IOException {
+        this.server = server;
+        this.socket = socket;
+        this.in = new DataInputStream(socket.getInputStream());
+        this.out = new DataOutputStream(socket.getOutputStream());
+        this.username = "user_" + socket.getPort();
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (active) {
+                String message = in.readUTF();
+                // /служебные сообщения;
+                if (message.startsWith("/")) {
+                    if (message.equals("/exit")) {
+                        sendMsg("/exitOK");
+                        break;
+                    } else if (message.startsWith("/w")) {
+                        String[] tokenMsg = message.split(" ", 3);
+                        String recipient = tokenMsg[1];
+                        String privateMsg = tokenMsg[2];
+                        server.privateMessage(this, recipient, privateMsg);
+                    }
+                } else {
+                    System.out.println(username + ": " + message);
+                    server.broadcastMessage(username + ": " + message);
+                }
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            disconnect();
+        }
+    }
+
+    public void sendMsg(String message) {
+        try {
+            out.writeUTF(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    private void disconnect() {
+        active = false;
+        server.unsubscribe(this);
+        try {
+            if (in != null) {
+                in.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (out != null) {
+                out.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+}
