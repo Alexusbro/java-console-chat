@@ -24,7 +24,7 @@ public class Client implements Runnable {
         in = new DataInputStream(socket.getInputStream());
     }
 
-    public void readMessage() {
+    private void readMessage() {
         new Thread(() -> {
             try {
                 while (active) {
@@ -47,6 +47,7 @@ public class Client implements Runnable {
 
     @Override
     public void run() {
+        readMessage();
         try {
             while (active) {
                 String message = scan.nextLine();
@@ -58,6 +59,7 @@ public class Client implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     private void disconnect() {
