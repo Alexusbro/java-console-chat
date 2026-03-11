@@ -12,18 +12,43 @@ public class ClientHandler implements Runnable {
     private DataOutputStream out;
     private boolean active = true;
     private String username;
+    private boolean isAuthenticate;
 
     public ClientHandler(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
-        this.username = "user_" + socket.getPort();
+        //this.username = "user_" + socket.getPort();
     }
 
     @Override
     public void run() {
         try {
+            while (!isAuthenticate) {
+                sendMsg(ConsoleColors.GREEN + "Для авторизации введите данные в формате /auth login parol" + ConsoleColors.RESET);
+                String message = in.readUTF();
+                // /служебные сообщения;
+                if (message.startsWith("/")) {
+                    if (message.equals("/exit")) {
+                        sendMsg("/exitOK");
+                        break;
+                    }
+                    if (message.startsWith("/auth")) {
+                        String[] token = message.trim().split(" ");
+                        if (token.length != 3) {
+                            sendMsg(ConsoleColors.RED_BRIGHT + "Неверный формат команды авторизации" + ConsoleColors.RESET);
+                            continue;
+                        }
+                        if (server.getAuthenticatedProvider().authenticate(this, token[1], token[2])) {
+                            isAuthenticate = true;
+                            break;
+                        }
+                    }
+                }
+
+            }
+
             while (active) {
                 String message = in.readUTF();
                 // /служебные сообщения;
@@ -39,7 +64,7 @@ public class ClientHandler implements Runnable {
                     }
                 } else {
                     System.out.println(username + ": " + message);
-                    server.broadcastMessage(username + ": " + message);
+                    server.broadcastMessage(username, message);
                 }
 
             }

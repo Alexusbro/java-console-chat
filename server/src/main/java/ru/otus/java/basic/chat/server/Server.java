@@ -9,10 +9,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Server {
     private final int port;
     private List<ClientHandler> clients;
+    private AuthenticatedProvider authenticatedProvider;
 
     public Server(int port) {
         this.port = port;
-        clients = new CopyOnWriteArrayList<>();
+        this.clients = new CopyOnWriteArrayList<>();
+        this.authenticatedProvider = new InMemoryAuthenticatedProvider(this);
     }
 
     public void start() {
@@ -21,7 +23,6 @@ public class Server {
             while (true) {
                 Socket socket = serverSocket.accept();
                 ClientHandler clientHandler = new ClientHandler(this, socket);
-                subscribe(clientHandler);
                 new Thread(clientHandler).start();
 
             }
@@ -34,20 +35,20 @@ public class Server {
         clients.add(clientHandler);
         System.out.println(clientHandler.getUsername() + " connected");
         clientHandler.sendMsg("Вы подключились под ником " + clientHandler.getUsername());
-        broadcastMessage("Подключился пользователь " + clientHandler.getUsername());
+        broadcastMessage("Admin","Подключился пользователь " + clientHandler.getUsername());
 
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
         clients.remove(clientHandler);
         System.out.println(clientHandler.getUsername() + " disconnected");
-        broadcastMessage("Чат покинул пользователь " + clientHandler.getUsername());
+        broadcastMessage("Admin","Чат покинул пользователь " + clientHandler.getUsername());
     }
 
 
-    public void broadcastMessage(String message) {
+    public void broadcastMessage(String sender, String message) {
         for (ClientHandler client : clients) {
-            client.sendMsg(message);
+            client.sendMsg(ConsoleColors.WHITE_BOLD + sender + ": " + ConsoleColors.BLUE+ message + ConsoleColors.RESET);
         }
     }
 
@@ -59,7 +60,20 @@ public class Server {
             }
         }
         if (recipient != null) {
-            recipient.sendMsg("Личное сообщение от " + clientHandler.getUsername() + ": " + message);
+            recipient.sendMsg(ConsoleColors.WHITE_BOLD + "Личное сообщение от " + clientHandler.getUsername() + ": " + ConsoleColors.BLUE + message + ConsoleColors.RESET);
         }
+    }
+
+    public boolean isUsernameBusy(String username) {
+        for (ClientHandler client : clients) {
+            if (client.getUsername().equals(username)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public AuthenticatedProvider getAuthenticatedProvider() {
+        return authenticatedProvider;
     }
 }
