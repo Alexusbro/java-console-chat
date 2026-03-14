@@ -10,7 +10,6 @@ public class ClientHandler implements Runnable {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
-    private boolean active = true;
     private String username;
     private boolean isAuthenticate;
 
@@ -26,7 +25,7 @@ public class ClientHandler implements Runnable {
     public void run() {
         try {
             while (!isAuthenticate) {
-                sendMsg(ConsoleColors.GREEN + "Для авторизации введите данные в формате /auth login parol" + ConsoleColors.RESET);
+                sendMsg(ConsoleColors.GREEN + "Для авторизации введите данные в формате /auth login parol\nДля регистрации введите данные в формате /reg login parol username" + ConsoleColors.RESET);
                 String message = in.readUTF();
                 // /служебные сообщения;
                 if (message.startsWith("/")) {
@@ -45,16 +44,27 @@ public class ClientHandler implements Runnable {
                             break;
                         }
                     }
+                    if (message.startsWith("/reg")) {
+                        String[] token = message.trim().split(" ");
+                        if (token.length != 4) {
+                            sendMsg(ConsoleColors.RED_BRIGHT + "Неверный формат команды регистрации" + ConsoleColors.RESET);
+                            continue;
+                        }
+                        if (server.getAuthenticatedProvider().register(this, token[1], token[2], token[3])) {
+                            isAuthenticate = true;
+                            break;
+                        }
+                    }
                 }
 
             }
 
-            while (active) {
+            while (isAuthenticate) {
                 String message = in.readUTF();
                 // /служебные сообщения;
                 if (message.startsWith("/")) {
                     if (message.equals("/exit")) {
-                        sendMsg("/exitOK");
+                        sendMsg(ConsoleColors.GREEN + "/exitOK" + ConsoleColors.RESET);
                         break;
                     } else if (message.startsWith("/w")) {
                         String[] tokenMsg = message.split(" ", 3);
@@ -92,7 +102,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void disconnect() {
-        active = false;
+        isAuthenticate = false;
         server.unsubscribe(this);
         try {
             if (in != null) {

@@ -34,7 +34,6 @@ public class Server {
     public void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
         System.out.println(clientHandler.getUsername() + " connected");
-        clientHandler.sendMsg("Вы подключились под ником " + clientHandler.getUsername());
         broadcastMessage("Admin","Подключился пользователь " + clientHandler.getUsername());
 
     }
