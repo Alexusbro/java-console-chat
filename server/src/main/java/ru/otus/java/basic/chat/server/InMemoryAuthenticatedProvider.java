@@ -8,20 +8,27 @@ public class InMemoryAuthenticatedProvider implements AuthenticatedProvider {
         private String login;
         private String password;
         private String username;
+        private UserRole userRole;
+
 
         public User(String login, String password, String username) {
             this.login = login;
             this.password = password;
             this.username = username;
+            this.userRole = UserRole.USER;
         }
     }
 
     private Server server;
     private List<User> users;
 
+
     public InMemoryAuthenticatedProvider(Server server) {
         this.server = server;
         this.users = new CopyOnWriteArrayList<>();
+        User admin = new User("admin", "admin", "Admin");
+        admin.userRole = UserRole.ADMIN;
+        this.users.add(admin);
         this.users.add(new User("user1", "user1", "Ivan"));
         this.users.add(new User("user2", "user2", "Anna"));
         this.users.add(new User("user3", "user3", "Anton"));
@@ -32,10 +39,10 @@ public class InMemoryAuthenticatedProvider implements AuthenticatedProvider {
         System.out.println("Сервер аутентификации запущен в режиме InMemory");
     }
 
-    private String getUserNameByLoginAndPassword(String login, String password) {
+    private User getUserByLoginAndPassword(String login, String password) {
         for (User user : users) {
             if (user.login.equals(login) && user.password.equals(password)) {
-                return user.username;
+                return user;
             }
         }
         return null;
@@ -43,19 +50,20 @@ public class InMemoryAuthenticatedProvider implements AuthenticatedProvider {
 
     @Override
     public boolean authenticate(ClientHandler clientHandler, String login, String password) {
-        String authUsername = getUserNameByLoginAndPassword(login, password);
-        if (authUsername == null) {
+        User authUser = getUserByLoginAndPassword(login, password);
+        if (authUser == null) {
             clientHandler.sendMsg(ConsoleColors.RED_BRIGHT + "Неверный логин/пароль" + ConsoleColors.RESET);
             return false;
         }
-        if (server.isUsernameBusy(authUsername)) {
+        if (server.isUsernameBusy(authUser.username)) {
             clientHandler.sendMsg(ConsoleColors.RED_BRIGHT + "Учетная запись уже занята" + ConsoleColors.RESET);
             return false;
         }
-        clientHandler.setUsername(authUsername);
-        clientHandler.sendMsg(ConsoleColors.GREEN + "Вы подключились под ником " + authUsername + ConsoleColors.RESET);
+        clientHandler.setUsername(authUser.username);
+        clientHandler.setUserRole(authUser.userRole);
+        clientHandler.sendMsg(ConsoleColors.GREEN + "Вы подключились под ником " + authUser.username + ConsoleColors.RESET);
         server.subscribe(clientHandler);
-        clientHandler.sendMsg("/authok " + authUsername);
+        clientHandler.sendMsg("/authok " + authUser.username);
         return true;
     }
 
@@ -67,6 +75,7 @@ public class InMemoryAuthenticatedProvider implements AuthenticatedProvider {
         }
         return false;
     }
+
     private boolean isUsernameAlredyExists(String username) {
         for (User user : users) {
             if (user.username.equals(username)) {

@@ -34,20 +34,20 @@ public class Server {
     public void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
         System.out.println(clientHandler.getUsername() + " connected");
-        broadcastMessage("Admin","Подключился пользователь " + clientHandler.getUsername());
+        broadcastMessage("Уведомление", "Подключился пользователь " + clientHandler.getUsername());
 
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
         clients.remove(clientHandler);
         System.out.println(clientHandler.getUsername() + " disconnected");
-        broadcastMessage("Admin","Чат покинул пользователь " + clientHandler.getUsername());
+        broadcastMessage("Уведомление", "Чат покинул пользователь " + clientHandler.getUsername());
     }
 
 
     public void broadcastMessage(String sender, String message) {
         for (ClientHandler client : clients) {
-            client.sendMsg(ConsoleColors.WHITE_BOLD + sender + ": " + ConsoleColors.BLUE+ message + ConsoleColors.RESET);
+            client.sendMsg(ConsoleColors.WHITE_BOLD + sender + ": " + ConsoleColors.BLUE + message + ConsoleColors.RESET);
         }
     }
 
@@ -63,6 +63,19 @@ public class Server {
         }
     }
 
+    public void kick(String username) {
+        ClientHandler clientForKick = null;
+        for (ClientHandler client : clients) {
+            if (client.getUsername().equals(username)) {
+                clientForKick = client;
+            }
+        }
+        if (clientForKick != null) {
+            clientForKick.disconnect();
+        }
+
+    }
+
     public boolean isUsernameBusy(String username) {
         for (ClientHandler client : clients) {
             if (client.getUsername().equals(username)) {
@@ -75,4 +88,6 @@ public class Server {
     public AuthenticatedProvider getAuthenticatedProvider() {
         return authenticatedProvider;
     }
+
+
 }
