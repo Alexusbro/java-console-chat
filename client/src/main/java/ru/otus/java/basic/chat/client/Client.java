@@ -33,9 +33,15 @@ public class Client implements Runnable {
                         if (message.equals("/exitOK")) {
                             break;
                         }
-                    } else {
-                        System.out.println(message);
+                        if (message.equals("/authok")) {
+                            System.out.println("Удалось войти в чат с именем пользователя " + message.split(" ")[1]);
+                        }
+                        if (message.equals("/regok")) {
+                            System.out.println("Удалось успешно зарегистироваться и войти в чат с именем пользователя " + message.split(" ")[1]);
+                        }
+                        continue;
                     }
+                    System.out.println(message);
                 }
             } catch (IOException e) {
                 e.printStackTrace();

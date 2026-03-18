@@ -6,7 +6,6 @@ public class ClientApp {
     public static void main(String[] args) {
         try {
             Client client = new Client("localhost", 8190);
-          //  client.readMessage();
             client.run();
         } catch (IOException e) {
             e.printStackTrace();

@@ -10,36 +10,89 @@ public class ClientHandler implements Runnable {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
-    private boolean active = true;
     private String username;
+    private UserRole userRole;
+    private boolean isAuthenticate;
+    private boolean isClosed;
 
     public ClientHandler(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
-        this.username = "user_" + socket.getPort();
     }
 
     @Override
     public void run() {
         try {
-            while (active) {
+            while (!isAuthenticate) {
+                sendMsg(ConsoleColors.GREEN + "Для авторизации введите данные в формате /auth login parol\n" +
+                        "Для регистрации введите данные в формате /reg login parol username" + ConsoleColors.RESET);
                 String message = in.readUTF();
                 // /служебные сообщения;
                 if (message.startsWith("/")) {
                     if (message.equals("/exit")) {
                         sendMsg("/exitOK");
                         break;
-                    } else if (message.startsWith("/w")) {
+                    }
+                    if (message.startsWith("/auth")) {
+                        String[] token = message.trim().split(" ");
+                        if (token.length != 3) {
+                            sendMsg(ConsoleColors.RED_BRIGHT + "Неверный формат команды авторизации" + ConsoleColors.RESET);
+                            continue;
+                        }
+                        if (server.getAuthenticatedProvider().authenticate(this, token[1], token[2])) {
+                            isAuthenticate = true;
+                            if (this.userRole == UserRole.ADMIN) {
+                                sendMsg(ConsoleColors.GREEN + "Команды администратора:\n " +
+                                        ConsoleColors.YELLOW_BOLD + "/kick username" + ConsoleColors.GREEN + " - удаление пользователя");
+                            }
+                            break;
+                        }
+                    }
+                    if (message.startsWith("/reg")) {
+                        String[] token = message.trim().split(" ");
+                        if (token.length != 4) {
+                            sendMsg(ConsoleColors.RED_BRIGHT + "Неверный формат команды регистрации" + ConsoleColors.RESET);
+                            continue;
+                        }
+                        if (server.getAuthenticatedProvider().register(this, token[1], token[2], token[3])) {
+                            isAuthenticate = true;
+                            break;
+                        }
+                    }
+                }
+
+            }
+
+            while (isAuthenticate) {
+                String message = in.readUTF();
+                // /служебные сообщения;
+                if (message.startsWith("/")) {
+                    if (message.equals("/exit")) {
+                        sendMsg(ConsoleColors.GREEN + "/exitOK" + ConsoleColors.RESET);
+                        break;
+                    }
+                    if (message.startsWith("/w")) {
                         String[] tokenMsg = message.split(" ", 3);
                         String recipient = tokenMsg[1];
                         String privateMsg = tokenMsg[2];
                         server.privateMessage(this, recipient, privateMsg);
                     }
+                    if (message.startsWith("/kick")) {
+                        if (message.trim().split(" ").length != 2) {
+                            sendMsg(ConsoleColors.RED + "Неверный формат команды" + ConsoleColors.RESET);
+                        }
+                        if (userRole != UserRole.ADMIN) {
+                            sendMsg(ConsoleColors.RED + "Недостаточно прав" + ConsoleColors.RESET);
+                        } else {
+                            server.kick(message.trim().split(" ")[1]);
+
+                        }
+                    }
                 } else {
                     System.out.println(username + ": " + message);
-                    server.broadcastMessage(username + ": " + message);
+                    server.broadcastMessage(username, message);
                 }
 
             }
@@ -66,8 +119,16 @@ public class ClientHandler implements Runnable {
         this.username = username;
     }
 
-    private void disconnect() {
-        active = false;
+    void setUserRole(UserRole userRole) {
+        this.userRole = userRole;
+    }
+
+    void disconnect() {
+        if (isClosed) {
+            return;
+        }
+        isClosed = true;
+        isAuthenticate = false;
         server.unsubscribe(this);
         try {
             if (in != null) {
