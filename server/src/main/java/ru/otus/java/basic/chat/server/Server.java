@@ -3,6 +3,9 @@ package ru.otus.java.basic.chat.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -10,6 +13,7 @@ public class Server {
     private final int port;
     private List<ClientHandler> clients;
     private AuthenticatedProvider authenticatedProvider;
+    private DatabaseConnection connection;
 
     public Server(int port) {
         this.port = port;
@@ -20,6 +24,8 @@ public class Server {
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started, port: " + port);
+            connection = new DatabaseConnection();
+
             while (true) {
                 Socket socket = serverSocket.accept();
                 ClientHandler clientHandler = new ClientHandler(this, socket);
@@ -30,6 +36,8 @@ public class Server {
             e.printStackTrace();
         }
     }
+
+
 
     public void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
