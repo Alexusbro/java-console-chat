@@ -1,17 +1,19 @@
 package ru.otus.java.basic.chat.server;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class DatabaseConnection {
+
     private Connection connection;
     private Statement stmt;
 
-    public DatabaseConnection() {
-        connect("jdbc:postgresql://localhost:5432/chat_db?user=postgres&password=1");
+    public DatabaseConnection(String url) {
+        connect(url);
         createTable();
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
     private void connect(String url) {
@@ -37,9 +39,9 @@ public class DatabaseConnection {
         try {
             stmt.executeUpdate("create table if not exists users (" +
                     "id serial," +
-                    "login varchar(50) not null," +
+                    "login varchar(50) unique not null," +
                     "password varchar(50) not null," +
-                    "username varchar(100) not null," +
+                    "username varchar(100) unique not null," +
                     "userRole varchar(50) not null," +
                     "constraint pk_user primary key(id)" +
                     ")");
@@ -47,5 +49,6 @@ public class DatabaseConnection {
             e.printStackTrace();
         }
     }
+
 
 }

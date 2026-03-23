@@ -13,18 +13,19 @@ public class Server {
     private final int port;
     private List<ClientHandler> clients;
     private AuthenticatedProvider authenticatedProvider;
-    private DatabaseConnection connection;
+
 
     public Server(int port) {
         this.port = port;
         this.clients = new CopyOnWriteArrayList<>();
-        this.authenticatedProvider = new InMemoryAuthenticatedProvider(this);
+        this.authenticatedProvider = new DatabaseAuthenticatedProvider(this);
+        authenticatedProvider.initialize();
     }
 
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started, port: " + port);
-            connection = new DatabaseConnection();
+
 
             while (true) {
                 Socket socket = serverSocket.accept();
