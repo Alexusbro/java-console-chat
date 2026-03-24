@@ -6,23 +6,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class DatabaseAuthenticatedProvider implements AuthenticatedProvider {
-    private class User {
-        private String login;
-        private String password;
-        private String username;
-        private String userRole;
-
-
-        public User(String login, String password, String username, String userRole) {
-            this.login = login;
-            this.password = password;
-            this.username = username;
-            this.userRole = userRole;
-        }
-    }
-
     private Server server;
     private DatabaseConnection databaseConnection;
+    private static final String DB = "chat_db";
+    private static final int PORT_DB = 5432;
+    private static final String USER_DB = "postgres";
+    private static final String PASSWORD_DB = "1";
+    private static final String URL_DATABASE = String.format("jdbc:postgresql://localhost:%s/%s?user=%s&password=%s", PORT_DB, DB, USER_DB, PASSWORD_DB);
 
     public DatabaseAuthenticatedProvider(Server server) {
         this.server = server;
@@ -30,7 +20,7 @@ public class DatabaseAuthenticatedProvider implements AuthenticatedProvider {
 
     @Override
     public void initialize() {
-        databaseConnection = new DatabaseConnection("jdbc:postgresql://localhost:5432/chat_db?user=postgres&password=1");
+        databaseConnection = new DatabaseConnection(URL_DATABASE);
         System.out.println("подключение к базе данных пользователей успешно");
     }
 
@@ -101,15 +91,15 @@ public class DatabaseAuthenticatedProvider implements AuthenticatedProvider {
             clientHandler.sendMsg(ConsoleColors.RED_BRIGHT + "Неверный логин/пароль" + ConsoleColors.RESET);
             return false;
         }
-        if (server.isUsernameBusy(authUser.username)) {
+        if (server.isUsernameBusy(authUser.getUsername())) {
             clientHandler.sendMsg(ConsoleColors.RED_BRIGHT + "Учетная запись уже занята" + ConsoleColors.RESET);
             return false;
         }
-        clientHandler.setUsername(authUser.username);
-        clientHandler.setUserRole(authUser.userRole);
-        clientHandler.sendMsg(ConsoleColors.GREEN + "Вы подключились под ником " + authUser.username + ConsoleColors.RESET);
+        clientHandler.setUsername(authUser.getUsername());
+        clientHandler.setUserRole(authUser.getUserRole());
+        clientHandler.sendMsg(ConsoleColors.GREEN + "Вы подключились под ником " + authUser.getUsername() + ConsoleColors.RESET);
         server.subscribe(clientHandler);
-        clientHandler.sendMsg("/authok " + authUser.username);
+        clientHandler.sendMsg("/authok " + authUser.getUsername());
         return true;
     }
 
