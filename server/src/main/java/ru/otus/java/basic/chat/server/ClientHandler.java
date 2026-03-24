@@ -11,7 +11,7 @@ public class ClientHandler implements Runnable {
     private DataInputStream in;
     private DataOutputStream out;
     private String username;
-    private UserRole userRole;
+    private String userRole;
     private boolean isAuthenticate;
     private boolean isClosed;
 
@@ -43,7 +43,7 @@ public class ClientHandler implements Runnable {
                         }
                         if (server.getAuthenticatedProvider().authenticate(this, token[1], token[2])) {
                             isAuthenticate = true;
-                            if (this.userRole == UserRole.ADMIN) {
+                            if (this.userRole.equals("Admin")) {
                                 sendMsg(ConsoleColors.GREEN + "Команды администратора:\n " +
                                         ConsoleColors.YELLOW_BOLD + "/kick username" + ConsoleColors.GREEN + " - удаление пользователя");
                             }
@@ -83,7 +83,7 @@ public class ClientHandler implements Runnable {
                         if (message.trim().split(" ").length != 2) {
                             sendMsg(ConsoleColors.RED + "Неверный формат команды" + ConsoleColors.RESET);
                         }
-                        if (userRole != UserRole.ADMIN) {
+                        if (!userRole.equals("Admin")) {
                             sendMsg(ConsoleColors.RED + "Недостаточно прав" + ConsoleColors.RESET);
                         } else {
                             server.kick(message.trim().split(" ")[1]);
@@ -119,7 +119,7 @@ public class ClientHandler implements Runnable {
         this.username = username;
     }
 
-    void setUserRole(UserRole userRole) {
+    void setUserRole(String userRole) {
         this.userRole = userRole;
     }
 
